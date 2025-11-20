@@ -98,6 +98,7 @@ class CoachTabView extends ConsumerWidget {
         data: (plan) => _CoachTabContent(
           plan: plan,
           onToggleTask: controller.toggleTaskStatus,
+          onSubmitAnswer: controller.gradeTask,
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Padding(
@@ -113,10 +114,12 @@ class _CoachTabContent extends StatelessWidget {
   const _CoachTabContent({
     required this.plan,
     required this.onToggleTask,
+    required this.onSubmitAnswer,
   });
 
   final DailyPrescription plan;
   final void Function(String taskId) onToggleTask;
+  final bool Function(String taskId, String answer) onSubmitAnswer;
 
   @override
   Widget build(BuildContext context) {
@@ -137,6 +140,7 @@ class _CoachTabContent extends StatelessWidget {
             (task) => _PrescriptionCard(
               task: task,
               onToggleTask: onToggleTask,
+              onSubmitAnswer: onSubmitAnswer,
             ),
           ),
         const SizedBox(height: 24),
@@ -208,10 +212,12 @@ class _PrescriptionCard extends StatelessWidget {
   const _PrescriptionCard({
     required this.task,
     required this.onToggleTask,
+    required this.onSubmitAnswer,
   });
 
   final PrescriptionTask task;
   final void Function(String taskId) onToggleTask;
+  final bool Function(String taskId, String answer) onSubmitAnswer;
 
   @override
   Widget build(BuildContext context) {
@@ -249,6 +255,7 @@ class _PrescriptionCard extends StatelessWidget {
         child: _RemediationBottomSheet(
           task: task,
           onCompleteTask: () => onToggleTask(task.id),
+          onSubmitAnswer: (answer) => onSubmitAnswer(task.id, answer),
         ),
       ),
     );
@@ -495,10 +502,12 @@ class _RemediationBottomSheet extends ConsumerStatefulWidget {
   const _RemediationBottomSheet({
     required this.task,
     required this.onCompleteTask,
+    required this.onSubmitAnswer,
   });
 
   final PrescriptionTask task;
   final VoidCallback onCompleteTask;
+  final bool Function(String answer) onSubmitAnswer;
 
   @override
   ConsumerState<_RemediationBottomSheet> createState() =>
@@ -594,12 +603,9 @@ class _RemediationBottomSheetState
               Expanded(
                 child: FilledButton(
                   onPressed: () {
-                    final grading = ref
-                        .read(dailyPrescriptionControllerProvider.notifier)
-                        .gradeTask(
-                          widget.task.id,
-                          _answerController.text,
-                        );
+                    final grading = widget.onSubmitAnswer(
+                      _answerController.text,
+                    );
                     setState(() {
                       _isCorrect = grading;
                       _feedback = grading ? '정답이에요! 🎉' : '아쉽다, 다시 시도해볼까요?';

@@ -424,7 +424,7 @@ class _AttachmentList extends StatelessWidget {
                 ),
                 title: Text(attachment.fileName),
                 subtitle: Text(_statusText(attachment)),
-                trailing: Icon(_statusIcon(attachment)),
+                trailing: _buildTrailing(attachment, context),
               ),
             ),
           )
@@ -441,20 +441,32 @@ class _AttachmentList extends StatelessWidget {
       case AttachmentStatus.completed:
         return attachment.ocrText ?? 'OCR 완료';
       case AttachmentStatus.failed:
-        return '처리에 실패했어요.';
+        return attachment.errorMessage ?? '처리에 실패했어요.';
     }
   }
 
-  IconData _statusIcon(ProblemAttachment attachment) {
+  Widget _buildTrailing(ProblemAttachment attachment, BuildContext context) {
     switch (attachment.status) {
       case AttachmentStatus.pending:
-        return Icons.hourglass_empty;
+        return const Icon(Icons.hourglass_empty);
       case AttachmentStatus.processing:
-        return Icons.sync;
+        return const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        );
       case AttachmentStatus.completed:
-        return Icons.check_circle;
+        return const Icon(Icons.check_circle);
       case AttachmentStatus.failed:
-        return Icons.error;
+        return Consumer(
+          builder: (context, ref, _) => IconButton(
+            tooltip: '다시 시도',
+            icon: const Icon(Icons.refresh),
+            onPressed: () => ref
+                .read(toolWorkspaceControllerProvider.notifier)
+                .retryAttachment(attachment.id),
+          ),
+        );
     }
   }
 }

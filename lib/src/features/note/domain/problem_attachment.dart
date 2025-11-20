@@ -10,6 +10,7 @@ class ProblemAttachment {
     required this.createdAt,
     this.status = AttachmentStatus.pending,
     this.ocrText,
+    this.errorMessage,
   });
 
   final String id;
@@ -18,10 +19,12 @@ class ProblemAttachment {
   final DateTime createdAt;
   final AttachmentStatus status;
   final String? ocrText;
+  final String? errorMessage;
 
   ProblemAttachment copyWith({
     AttachmentStatus? status,
     String? ocrText,
+    String? errorMessage,
   }) {
     return ProblemAttachment(
       id: id,
@@ -30,6 +33,7 @@ class ProblemAttachment {
       createdAt: createdAt,
       status: status ?? this.status,
       ocrText: ocrText ?? this.ocrText,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }

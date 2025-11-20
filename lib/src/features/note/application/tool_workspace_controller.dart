@@ -3,7 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../domain/problem_attachment.dart';
+import '../services/ai_service.dart';
+import '../services/ocr_service.dart';
 import 'tool_workspace_state.dart';
+
+final ocrServiceProvider = Provider<OcrService>((_) => StubOcrService());
+final aiServiceProvider = Provider<AiService>((_) => StubAiService());
 
 final toolWorkspaceControllerProvider =
     NotifierProvider<ToolWorkspaceController, ToolWorkspaceState>(
@@ -30,24 +35,88 @@ class ToolWorkspaceController extends Notifier<ToolWorkspaceState> {
       attachments: [...state.attachments, attachment],
     );
 
-    await Future<void>.delayed(const Duration(seconds: 1));
-    _updateAttachment(
-      attachment.id,
-      attachment.copyWith(
-        status: AttachmentStatus.completed,
-        ocrText: '[미연동 OCR] ${{AttachmentType.photo: '사진', AttachmentType.pdf: 'PDF'}[type]} 업로드 성공',
-      ),
-    );
+    try {
+      final ocrText = await ref.read(ocrServiceProvider).process(attachment.fileName);
+      _updateAttachment(
+        attachment.id,
+        attachment.copyWith(
+          status: AttachmentStatus.completed,
+          ocrText: ocrText,
+          errorMessage: null,
+        ),
+      );
+    } catch (e) {
+      _updateAttachment(
+        attachment.id,
+        attachment.copyWith(
+          status: AttachmentStatus.failed,
+          errorMessage: 'OCR 처리 실패: $e',
+        ),
+      );
+    }
   }
 
   Future<void> askQuestion(String question) async {
     if (question.trim().isEmpty) return;
     state = state.copyWith(isBusy: true, lastQuestion: question, lastAnswer: null);
-    await Future<void>.delayed(const Duration(seconds: 1));
-    state = state.copyWith(
-      isBusy: false,
-      lastAnswer: '[미연동 AI] "$question"에 대한 응답을 여기에 표시합니다.',
+    try {
+      final context = state.attachments
+          .where((a) => a.ocrText != null)
+          .map((a) => a.ocrText!)
+          .join('\n');
+      final answer = await ref.read(aiServiceProvider).answerQuestion(
+            question: question,
+            context: context,
+          );
+      state = state.copyWith(
+        isBusy: false,
+        lastAnswer: answer,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isBusy: false,
+        lastAnswer: 'AI 응답 실패: $e',
+      );
+    }
+  }
+
+  Future<void> retryAttachment(String attachmentId) async {
+    final target = state.attachments.firstWhere(
+      (a) => a.id == attachmentId,
+      orElse: () => ProblemAttachment(
+        id: '',
+        type: AttachmentType.photo,
+        fileName: '',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      ),
     );
+    if (target.id.isEmpty) return;
+    _updateAttachment(
+      target.id,
+      target.copyWith(
+        status: AttachmentStatus.processing,
+        errorMessage: null,
+      ),
+    );
+    try {
+      final ocrText = await ref.read(ocrServiceProvider).process(target.fileName);
+      _updateAttachment(
+        target.id,
+        target.copyWith(
+          status: AttachmentStatus.completed,
+          ocrText: ocrText,
+          errorMessage: null,
+        ),
+      );
+    } catch (e) {
+      _updateAttachment(
+        target.id,
+        target.copyWith(
+          status: AttachmentStatus.failed,
+          errorMessage: 'OCR 처리 실패: $e',
+        ),
+      );
+    }
   }
 
   void _updateAttachment(String id, ProblemAttachment updated) {

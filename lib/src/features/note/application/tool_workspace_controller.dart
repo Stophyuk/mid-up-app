@@ -3,12 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../domain/problem_attachment.dart';
-import '../services/fake_ai_service.dart';
-import '../services/fake_ocr_service.dart';
 import 'tool_workspace_state.dart';
-
-final fakeOcrServiceProvider = Provider((_) => FakeOcrService());
-final fakeAiServiceProvider = Provider((_) => FakeAiService());
 
 final toolWorkspaceControllerProvider =
     NotifierProvider<ToolWorkspaceController, ToolWorkspaceState>(
@@ -35,33 +30,24 @@ class ToolWorkspaceController extends Notifier<ToolWorkspaceState> {
       attachments: [...state.attachments, attachment],
     );
 
-    final ocrService = ref.read(fakeOcrServiceProvider);
-    try {
-      final text = await ocrService.process(attachment.fileName);
-      _updateAttachment(
-        attachment.id,
-        attachment.copyWith(
-          status: AttachmentStatus.completed,
-          ocrText: text,
-        ),
-      );
-    } catch (_) {
-      _updateAttachment(
-        attachment.id,
-        attachment.copyWith(status: AttachmentStatus.failed),
-      );
-    }
+    await Future<void>.delayed(const Duration(seconds: 1));
+    _updateAttachment(
+      attachment.id,
+      attachment.copyWith(
+        status: AttachmentStatus.completed,
+        ocrText: '[미연동 OCR] ${{AttachmentType.photo: '사진', AttachmentType.pdf: 'PDF'}[type]} 업로드 성공',
+      ),
+    );
   }
 
   Future<void> askQuestion(String question) async {
     if (question.trim().isEmpty) return;
     state = state.copyWith(isBusy: true, lastQuestion: question, lastAnswer: null);
-    final aiService = ref.read(fakeAiServiceProvider);
-    final answer = await aiService.answerQuestion(
-      question,
-      state.attachments.where((a) => a.ocrText != null).map((a) => a.ocrText!).join('\n'),
+    await Future<void>.delayed(const Duration(seconds: 1));
+    state = state.copyWith(
+      isBusy: false,
+      lastAnswer: '[미연동 AI] "$question"에 대한 응답을 여기에 표시합니다.',
     );
-    state = state.copyWith(isBusy: false, lastAnswer: answer);
   }
 
   void _updateAttachment(String id, ProblemAttachment updated) {

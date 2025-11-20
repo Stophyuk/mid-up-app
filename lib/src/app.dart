@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'features/knowledge_graph/domain/remediation_plan.dart';
 import 'features/note/application/tool_workspace_controller.dart';
 import 'features/note/domain/problem_attachment.dart';
 import 'features/note/presentation/freehand_canvas.dart';
@@ -9,7 +10,6 @@ import 'features/prescription/application/prescription_detail_controller.dart';
 import 'features/prescription/domain/daily_prescription.dart';
 import 'features/prescription/domain/prescription_task.dart';
 import 'features/prescription/domain/weakness.dart';
-import 'features/knowledge_graph/domain/remediation_plan.dart';
 
 class MidUpApp extends StatelessWidget {
   const MidUpApp({super.key});
@@ -235,7 +235,10 @@ class _PrescriptionCard extends StatelessWidget {
     );
   }
 
-  void _showPlanOverlay(BuildContext context, PrescriptionTask task) {
+  void _showPlanOverlay(
+    BuildContext context,
+    PrescriptionTask task,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -245,7 +248,10 @@ class _PrescriptionCard extends StatelessWidget {
             () => _InlinePlanController(task.remediationPlan),
           ),
         ],
-        child: _RemediationBottomSheet(task: task),
+        child: _RemediationBottomSheet(
+          task: task,
+          onCompleteTask: () => onToggleTask(task.id),
+        ),
       ),
     );
   }
@@ -465,6 +471,7 @@ class MyTabPlaceholder extends StatelessWidget {
     );
   }
 }
+
 class _InlinePlanController extends PrescriptionDetailController {
   _InlinePlanController(this.initialPlan);
 
@@ -474,13 +481,33 @@ class _InlinePlanController extends PrescriptionDetailController {
   RemediationPlan build() => initialPlan;
 }
 
-class _RemediationBottomSheet extends ConsumerWidget {
-  const _RemediationBottomSheet({required this.task});
+class _RemediationBottomSheet extends ConsumerStatefulWidget {
+  const _RemediationBottomSheet({
+    required this.task,
+    required this.onCompleteTask,
+  });
 
   final PrescriptionTask task;
+  final VoidCallback onCompleteTask;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_RemediationBottomSheet> createState() =>
+      _RemediationBottomSheetState();
+}
+
+class _RemediationBottomSheetState
+    extends ConsumerState<_RemediationBottomSheet> {
+  final _answerController = TextEditingController();
+
+  @override
+  void dispose() {
+    _answerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  @override
+  Widget build(BuildContext context) {
     final plan = ref.watch(prescriptionDetailControllerProvider);
     final controller = ref.read(prescriptionDetailControllerProvider.notifier);
     final currentStep = plan.steps[plan.focusedIndex];
@@ -506,7 +533,7 @@ class _RemediationBottomSheet extends ConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.refresh),
                 tooltip: '다시 연계 만들기',
-                onPressed: () => controller.regeneratePlan(task.problemId),
+                onPressed: () => controller.regeneratePlan(widget.task.problemId),
               ),
             ],
           ),
@@ -514,6 +541,15 @@ class _RemediationBottomSheet extends ConsumerWidget {
           Text(
             '현재 단계: ${currentStep.problem.prompt}',
             style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _answerController,
+            maxLines: null,
+            decoration: const InputDecoration(
+              labelText: '정답 입력',
+              hintText: '풀이를 적어보세요',
+            ),
           ),
           const SizedBox(height: 8),
           _PlanStepper(
@@ -533,8 +569,11 @@ class _RemediationBottomSheet extends ConsumerWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('계속 학습'),
+                  onPressed: () {
+                    widget.onCompleteTask();
+                    Navigator.pop(context);
+                  },
+                  child: const Text('정답 제출'),
                 ),
               ),
             ],
@@ -575,7 +614,7 @@ class _PlanStepper extends StatelessWidget {
               ),
               title: Text(step.problem.prompt),
               subtitle: Text(
-                step.depth == 0 ? '상위 문제' : '하위 개념 단계 ${step.depth}',
+                step.depth == 0 ? '상위 문제' : '하위 문제 단계 ${step.depth}',
               ),
               trailing: isLeaf
                   ? null

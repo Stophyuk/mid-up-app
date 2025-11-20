@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/theme/app_theme.dart';
 import 'features/knowledge_graph/domain/remediation_plan.dart';
 import 'features/note/application/tool_workspace_controller.dart';
 import 'features/note/domain/problem_attachment.dart';
@@ -18,10 +19,7 @@ class MidUpApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'MidUp Prototype',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light(),
       home: const HomeShell(),
     );
   }
@@ -181,7 +179,7 @@ class _Header extends StatelessWidget {
               backgroundColor: Theme.of(context)
                   .colorScheme
                   .onPrimaryContainer
-                  .withValues(alpha: 0.1),
+                  .withOpacity(0.1),
               color: Theme.of(context).colorScheme.onPrimaryContainer,
             ),
             const SizedBox(height: 8),

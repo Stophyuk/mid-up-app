@@ -97,7 +97,7 @@ class _FreehandPainter extends CustomPainter {
     final baseColor = const Color(0xFF1A1A1A);
     final paint = Paint()
       ..style = PaintingStyle.fill
-      ..color = baseColor.withValues(alpha: 0.9);
+      ..color = baseColor.withOpacity(0.9);
     for (final stroke in strokes) {
       final outline = freehand.getStroke(stroke, options: _options);
       if (outline.isEmpty) continue;

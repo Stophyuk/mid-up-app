@@ -15,12 +15,16 @@ class WeaknessService {
     required Map<String, RootCause> rootCauseMap,
     int limit = 3,
   }) {
-    final conceptScores = _calculateConceptScores(graph, rootCauseMap);
+    final docPriority = _buildDocPriority(documents);
+    final conceptScores = _calculateConceptScores(
+      graph: graph,
+      rootCauseMap: rootCauseMap,
+      docPriority: docPriority,
+    );
     if (conceptScores.isEmpty) {
       return _fallbackWeaknesses(graph);
     }
 
-    final docPriority = _buildDocPriority(documents);
     final sorted = conceptScores.entries.toList()
       ..sort((a, b) {
         final compareScore = b.value.compareTo(a.value);
@@ -48,18 +52,21 @@ class WeaknessService {
   }
 
   Map<String, double> _calculateConceptScores(
-    KnowledgeGraph graph,
-    Map<String, RootCause> rootCauseMap,
-  ) {
+    {required KnowledgeGraph graph,
+    required Map<String, RootCause> rootCauseMap,
+    required Map<String, int> docPriority}) {
     if (rootCauseMap.isEmpty) return const {};
     final scores = <String, double>{};
     for (final problem in graph.allProblems) {
       final severity = _problemSeverity(problem, rootCauseMap);
       if (severity <= 0) continue;
+      final difficultyWeight = (problem.difficulty.clamp(1, 5)) / 5 * 0.5 + 0.5;
+      final docWeight = _docWeight(docPriority[problem.conceptId]);
+      final weighted = severity * difficultyWeight * docWeight;
       scores.update(
         problem.conceptId,
-        (value) => value + severity,
-        ifAbsent: () => severity,
+        (value) => value + weighted,
+        ifAbsent: () => weighted,
       );
     }
     if (scores.isEmpty) {
@@ -70,6 +77,11 @@ class WeaknessService {
     return scores.map(
       (key, value) => MapEntry(key, value / maxScore),
     );
+  }
+
+  double _docWeight(int? priority) {
+    if (priority == null) return 1.0;
+    return 1 / (1 + priority);
   }
 
   double _problemSeverity(

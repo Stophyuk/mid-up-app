@@ -498,6 +498,8 @@ class _RemediationBottomSheet extends ConsumerStatefulWidget {
 class _RemediationBottomSheetState
     extends ConsumerState<_RemediationBottomSheet> {
   final _answerController = TextEditingController();
+  String? _feedback;
+  bool? _isCorrect;
 
   @override
   void dispose() {
@@ -551,6 +553,18 @@ class _RemediationBottomSheetState
               hintText: '풀이를 적어보세요',
             ),
           ),
+          if (_feedback != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _feedback!,
+                style: TextStyle(
+                  color: _isCorrect == true
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
           const SizedBox(height: 8),
           _PlanStepper(
             plan: plan,
@@ -570,8 +584,20 @@ class _RemediationBottomSheetState
               Expanded(
                 child: FilledButton(
                   onPressed: () {
-                    widget.onCompleteTask();
-                    Navigator.pop(context);
+                    final grading = ref
+                        .read(dailyPrescriptionControllerProvider.notifier)
+                        .gradeTask(
+                          widget.task.id,
+                          _answerController.text,
+                        );
+                    setState(() {
+                      _isCorrect = grading;
+                      _feedback = grading ? '정답이에요! 🎉' : '아쉽다, 다시 시도해볼까요?';
+                    });
+                    if (grading) {
+                      widget.onCompleteTask();
+                      Navigator.pop(context);
+                    }
                   },
                   child: const Text('정답 제출'),
                 ),

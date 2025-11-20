@@ -41,6 +41,34 @@ class DailyPrescriptionController
     state = AsyncData(current.copyWith(tasks: updatedTasks));
   }
 
+  bool gradeTask(String taskId, String answer) {
+    final current = state.valueOrNull;
+    if (current == null) return false;
+    final graph = ref.read(knowledgeGraphProvider);
+    final tasks = current.tasks;
+    final idx = tasks.indexWhere((t) => t.id == taskId);
+    if (idx == -1) return false;
+    final task = tasks[idx];
+    final problem = graph.problemById(task.problemId);
+    if (problem == null) return false;
+    final correct = problem.correctAnswer.trim().toLowerCase();
+    final user = answer.trim().toLowerCase();
+    final isCorrect = user == correct || user == problem.prompt.trim().toLowerCase();
+    final updated = [
+      for (final t in tasks)
+        if (t.id == taskId)
+          t.copyWith(
+            status: isCorrect
+                ? PrescriptionTaskStatus.completed
+                : PrescriptionTaskStatus.pending,
+          )
+        else
+          t,
+    ];
+    state = AsyncData(current.copyWith(tasks: updated));
+    return isCorrect;
+  }
+
   Future<DailyPrescription> _generatePlan() async {
     final graph = ref.read(knowledgeGraphProvider);
     final docs = ref.read(knowledgeGraphDocumentsProvider);

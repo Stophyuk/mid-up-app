@@ -536,6 +536,7 @@ class _ToolTabViewState extends ConsumerState<ToolTabView> {
                       height: 260,
                       background: _ProblemBackground(
                         prompt: _buildOcrBackground(workspace),
+                        imagePath: _pickAttachmentImage(workspace),
                       ),
                       hintText: '여기에 풀이를 적어보세요',
                     ),
@@ -633,6 +634,23 @@ class _ToolTabViewState extends ConsumerState<ToolTabView> {
     final text = completed.ocrText ?? completed.fileName;
     return text.length > 260 ? '${text.substring(0, 260)}...' : text;
   }
+
+  String? _pickAttachmentImage(ToolWorkspaceState workspace) {
+    final completedImage = workspace.attachments.firstWhere(
+      (a) =>
+          a.status == AttachmentStatus.completed &&
+          a.type == AttachmentType.photo &&
+          a.fileName.isNotEmpty,
+      orElse: () => ProblemAttachment(
+        id: '',
+        type: AttachmentType.photo,
+        fileName: '',
+        createdAt: DateTime.now(),
+      ),
+    );
+    if (completedImage.id.isEmpty) return null;
+    return completedImage.fileName;
+  }
 }
 
 class _FlowChip extends StatelessWidget {
@@ -690,31 +708,52 @@ class _FlowChip extends StatelessWidget {
 }
 
 class _ProblemBackground extends StatelessWidget {
-  const _ProblemBackground({required this.prompt});
+  const _ProblemBackground({required this.prompt, this.imagePath});
 
   final String prompt;
+  final String? imagePath;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.surfaceVariant.withOpacity(0.65),
-            theme.colorScheme.surface.withOpacity(0.65),
-          ],
-        ),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: Text(
-          prompt,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.65),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (imagePath != null && imagePath!.isNotEmpty)
+            Positioned.fill(
+              child: Image.file(
+                File(imagePath!),
+                fit: BoxFit.cover,
+                color: theme.colorScheme.surface.withOpacity(0.35),
+                colorBlendMode: BlendMode.srcATop,
+              ),
+            )
+          else
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.surfaceVariant.withOpacity(0.65),
+                    theme.colorScheme.surface.withOpacity(0.65),
+                  ],
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Text(
+                prompt,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.75),
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

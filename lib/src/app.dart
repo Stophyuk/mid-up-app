@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:io' as io;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -726,7 +726,7 @@ class _ProblemBackground extends StatelessWidget {
           if (imagePath != null && imagePath!.isNotEmpty)
             Positioned.fill(
               child: Image.file(
-                File(imagePath!),
+                io.File(imagePath!),
                 fit: BoxFit.cover,
                 color: theme.colorScheme.surface.withOpacity(0.35),
                 colorBlendMode: BlendMode.srcATop,

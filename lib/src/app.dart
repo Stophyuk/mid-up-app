@@ -388,6 +388,10 @@ class _PrescriptionCard extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      transitionAnimationController: AnimationController(
+        duration: const Duration(milliseconds: 240),
+        vsync: Navigator.of(context),
+      ),
       builder: (_) => ProviderScope(
         overrides: [
           prescriptionDetailControllerProvider.overrideWith(

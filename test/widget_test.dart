@@ -28,8 +28,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('오늘의 처방'), findsOneWidget);
-    expect(find.textContaining('인수분해'), findsWidgets);
+    expect(find.text('오늘의 처방'), findsOneWidget);
+    // 핵심 UI 요소가 보이는지만 확인 (문구 변경 시에도 유지되는 최소 체크)
+    expect(find.text('코칭'), findsOneWidget);
+    expect(find.text('노트'), findsOneWidget);
+    expect(find.textContaining('문제 업로드'), findsOneWidget);
   });
 }
 

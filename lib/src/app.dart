@@ -302,83 +302,92 @@ class _PrescriptionCard extends StatelessWidget {
     final path = plan.steps.map((s) => s.problem.conceptId).toList();
 
     return TweenAnimationBuilder<double>(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
-      tween: Tween(begin: 0.98, end: 1),
+      tween: Tween(begin: 0.985, end: 1),
       builder: (context, scale, child) {
         return AnimatedOpacity(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 180),
           opacity: isDone ? 0.8 : 1,
           child: Transform.scale(
             scale: isDone ? 0.99 : scale,
-            child: child,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDone
+                    ? theme.colorScheme.primaryContainer.withOpacity(0.25)
+                    : theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isDone
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outlineVariant,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.shadow
+                        .withOpacity(isDone ? 0.05 : 0.08),
+                    blurRadius: isDone ? 8 : 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: child,
+            ),
           ),
         );
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDone
-              ? theme.colorScheme.primaryContainer.withOpacity(0.25)
-              : theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isDone
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _StatusChip(
+                label: isDone ? '완료' : '처방',
+                color: isDone
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.secondary,
+              ),
+              const SizedBox(width: 8),
+              Text(task.conceptName, style: theme.textTheme.labelLarge),
+              const Spacer(),
+              IconButton(
+                tooltip: isDone ? '완료 취소' : '완료 표시',
+                icon: Icon(
+                  isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+                ),
+                color: isDone
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outline,
+                onPressed: () => onToggleTask(task.id),
+              ),
+            ],
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _StatusChip(
-                  label: isDone ? '완료' : '처방',
-                  color: isDone
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.secondary,
-                ),
-                const SizedBox(width: 8),
-                Text(task.conceptName, style: theme.textTheme.labelLarge),
-                const Spacer(),
-                IconButton(
-                  tooltip: isDone ? '완료 취소' : '완료 표시',
-                  icon: Icon(
-                    isDone ? Icons.check_circle : Icons.radio_button_unchecked,
-                  ),
-                  color: isDone
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.outline,
-                  onPressed: () => onToggleTask(task.id),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(task.prompt, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 10),
-            _StepPath(path: path),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.timer_outlined,
-                    size: 18, color: theme.colorScheme.onSurfaceVariant),
-                const SizedBox(width: 6),
-                Text('상위→하위 ${plan.steps.length}단계',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: () => _showPlanOverlay(context, task),
-                  icon: const Icon(Icons.arrow_outward),
-                  label: const Text('열기'),
-                ),
-              ],
-            ),
-          ],
-        ),
+          const SizedBox(height: 8),
+          Text(task.prompt, style: theme.textTheme.titleMedium),
+          const SizedBox(height: 10),
+          _StepPath(path: path),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.timer_outlined,
+                  size: 18, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text('상위→하위 ${plan.steps.length}단계',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () => _showPlanOverlay(context, task),
+                icon: const Icon(Icons.arrow_outward),
+                label: const Text('열기'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
